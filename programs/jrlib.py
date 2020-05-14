@@ -16,6 +16,6 @@ def YORN(message):
 # Generate a random word composed of random characters
 def generate_word(length):
     output_word = ""
-    for x in range(0, length):
+    for _ in range(length):
         output_word = output_word + random.choice(string.ascii_lowercase)
     return output_word
