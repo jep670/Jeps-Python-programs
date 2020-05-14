@@ -156,7 +156,7 @@ message = messageGet("red", "blue", "archers", "foot soldiers")
 if archBlue >= footRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red archers and the blue foot soldiers are at a standstill.")
 time.sleep(1)
 
@@ -164,7 +164,7 @@ message = messageGet("red", "blue", "heavy soldiers", "archers")
 if hardBlue >= archRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red heavy soldiers and the blue archers are at a standstill.")
 time.sleep(1)
 
@@ -172,7 +172,7 @@ message = messageGet("red", "blue", "foot soldiers", "heavy soldiers")
 if footBlue >= hardRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red foot soldiers and the blue heavy soldiers are at a standstill.")
 time.sleep(0.5)
 
@@ -225,7 +225,7 @@ message = messageGet("red", "blue", "archers", "foot soldiers")
 if archBlue >= footRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red archers and the blue foot soldiers are at a standstill.")
 time.sleep(1)
 
@@ -233,7 +233,7 @@ message = messageGet("red", "blue", "heavy soldiers", "archer")
 if hardBlue >= archRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red heavy soldiers and the blue archers are at a standstill.")
 time.sleep(1)
 
@@ -241,7 +241,7 @@ message = messageGet("red", "blue", "foot soldiers", "heavy soldiers")
 if footBlue >= hardRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red foot soldiers and the blue heavy soldiers are at a standstill.")
 time.sleep(0.5)
 
@@ -294,7 +294,7 @@ message = messageGet("red", "blue", "archers", "foot soldiers")
 if archBlue >= footRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red archers and the blue foot soldiers are at a standstill.")
 time.sleep(1)
 
@@ -302,7 +302,7 @@ message = messageGet("red", "blue", "heavy soldiers", "arch")
 if hardBlue >= archRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red heavy soldiers and the blue archers are at a standstill.")
 time.sleep(1)
 
@@ -310,7 +310,7 @@ message = messageGet("red", "blue", "foot soldiers", "heavy soldiers")
 if footBlue >= hardRed:
     print(message)
     redScore = redScore + 1
-else
+else:
     print("The red foot soldiers and the blue heavy soldiers are at a standstill.")
 
 time.sleep(0.5)
