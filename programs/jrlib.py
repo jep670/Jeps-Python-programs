@@ -1,7 +1,9 @@
 import random
+import string
+
 
 # Y or N question function
-def YORN (message):
+def YORN(message):
     while True:
         output = input(message)
         if output.lower() == "y":
@@ -9,3 +11,11 @@ def YORN (message):
         elif output.lower() == "n":
             return 0
         print(f"{output} was not an option. Please type Y or N next time.")
+
+
+# Generate a random word composed of random characters
+def generate_word(length):
+    output_word = ""
+    for x in range(1, length):
+        output_word = output_word + random.choice(string.ascii_lowercasae)
+    return output_word
