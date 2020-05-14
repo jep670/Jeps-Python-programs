@@ -17,5 +17,5 @@ def YORN(message):
 def generate_word(length):
     output_word = ""
     for x in range(1, length):
-        output_word = output_word + random.choice(string.ascii_lowercasae)
+        output_word = output_word + random.choice(string.ascii_lowercase)
     return output_word
