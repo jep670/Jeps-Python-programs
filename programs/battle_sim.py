@@ -173,7 +173,7 @@ if footBlue >= hardRed:
     print(message)
     redScore = redScore + 1
 else:
-    print("The red foot soldiers and the blue heavy soldiers are at a standstill.")
+    print("The red foot `1soldiers and the blue heavy soldiers are at a standstill.")
 time.sleep(0.5)
 
 if blueScore >= redScore :
