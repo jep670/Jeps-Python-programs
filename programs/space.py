@@ -7,10 +7,21 @@ import sys
 class Worker: 
     def __init__(self):
         self.name = jrlib.generate_word(random.randint(3, 6))
-        self.status
-        self.maxhealth
-        self.health
-        self.food
+        self.status = "alive"
+        self.maxHealth = 100
+        self.health = 100
+    def tdamage(self, damageTaken)
+        self.health = self.health - damageTaken
+    def heal(self, healthHealed)
+        self.health = self.health + healthHealed
+
+class Station:
+    def __init__(self, name):
+        self.food = 
+        self.oxygen = 100
+        self.day = 1
+    
+
 
 # Variables
 
