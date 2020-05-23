@@ -2,51 +2,42 @@ import jrlib
 import random
 import sys
 
+workers = []
+
 # Classes
 
 class Worker: 
     def __init__(self):
+        global workers
         self.name = jrlib.generate_word(random.randint(3, 6))
         self.status = "alive"
         self.maxHealth = 100
         self.health = 100
-    def tdamage(self, damageTaken)
+        workers.append(self)
+    def damage(self, damageTaken):
         self.health = self.health - damageTaken
-    def heal(self, healthHealed)
+    def heal(self, healthHealed):
         self.health = self.health + healthHealed
+    def attack(self, target):
+        target.damage(random.randint(10, 25))
+
+class Alien:
+    def __init__(self):
+        self.name = jrlib.generate_word(random.randint(1, 10))
+        self.maxHealth = random.randint(50, 120)
+        self.health = self.maxHealth
+        self.HEA = random.randint(21, 28)
+        self.LEA = random.randint(10, 20)
+    def damage(self, damageTaken):
+        self.health = self.health - damageTaken  
+    def attack(self, target):
+        target.damage(random.randint(self.LEA, self.HEA))
 
 class Station:
-    def __init__(self, name):
-        self.food = 
+    def __init__(self):
+        self.food = 21
         self.oxygen = 100
         self.day = 1
-    
-
-
-# Variables
-
-# Station variables
-station.food
-station.oxygen
-station.day
-
-# Worker 1
-worker1.status = "alive"
-worker1.health = 100
-worker1.food = 100
-worker1.name = jrlib.generate_word(random.randint(3, 6))
-
-# Worker 2
-worker2.status = "alive"
-worker2.health = 100
-worker2.food = 100
-worker2.name = jrlib.generate_word(random.randint(4, 7))
-
-# Worker 3
-worker3.status = "alive"
-worker3.health = 100
-worker3.food = 100
-worker3.name = jrlib.generate_word(random.randint(3, 5))
 
 # Start
 
@@ -55,3 +46,17 @@ if jrlib.YORN("Would you like to start the game? (Y/N)") == 1:
 else:
     sys.exit()
 
+stationName = input("What would you like to name your station?")
+
+station = Station()
+
+for _ in range(3):
+    Worker()
+
+print(len(workers))
+print(workers)
+
+print(f"Day {station.day}")
+print(f"{workers[0].name} is {workers[0].status}")
+
+input("")
