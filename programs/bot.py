@@ -41,8 +41,14 @@ async def guide(ctx):
         "\n *Axe, 25* - 10 wood, 10 stone (requires a Crafting Table)."\
         "\n *Pickaxe, 25* - 10 wood, 10 stone (requires a Crafting Table)."\
         "\n *Iron Bar* - 4 iron ore, 3 coal (requires a furnace)"\
-        "\n *Iron Axe, 25 - 10 wood, 3 iron bars (requires an anvil)"\
-        "\n *Iron Pickaxe, 25 - 10 wood, 3 iron bars (requires an anvil)"
+        "\n *Copper Bar* - 4 copper ore, 3 coal (requires a furnace)"\
+        "\n *Gold Bar* - 4 gold ore, 3 coal (requires a furnace)"\
+        "\n *Iron Axe*, 25 - 10 wood, 3 iron bars (requires an anvil)"\
+        "\n *Iron Pickaxe*, 25 - 10 wood, 3 iron bars (requires an anvil)"\
+        "\n *Copper Axe*, 25 - 10 wood, 3 Copper bars (requires an anvil)"\
+        "\n *Copper Pickaxe*, 25 - 10 wood, 3 Copper bars (requires an anvil)"\
+        "\n *Gold Axe*, 25 - 10 wood, 3 Gold bars (requires an anvil)"\
+        "\n *Gold Pickaxe*, 25 - 10 wood, 3 Gold bars (requires an anvil)"
     shop_menu = "*What you can buy at the shop*"\
         "\n *Axe, 25* - 100 gold."\
         "\n *Pickaxe, 25* - 100 gold."\
@@ -51,7 +57,10 @@ async def guide(ctx):
         "\n *Stone* - Use a pickaxe to get Stone."\
         "\n *Wood* - Use an axe to get Wood."\
         "\n *Coal* - Use a pickaxe to get Coal."\
-        "\n *Iron Ore* - Use a Pickaxe to get Iron Ore."
+        "\n *Iron Ore* - Use a Pickaxe to get Iron Ore."\
+        "\n *Copper Ore* - Use an Iron Pickaxe to get Copper Ore."\
+        "\n *Gold Ore* - Use a Copper Pickaxe to get Gold Ore."\
+        "\n *Diamond Ore* - Use a Gold Pickaxe to get Diamond Ore."
     guide_embed = discord.Embed(title="Guide", description=guide_menu)
     crafting_embed = discord.Embed(title="Crafting", description=crafting_menu)
     shop_embed = discord.Embed(title="Shop", description=shop_menu)
@@ -84,6 +93,19 @@ async def mine(ctx, inventory, level):
     give(inventory, "Stone")
     await ctx.send(f"You got {quantity} {output}s!")
 
+async def chop(ctx, inventory, level):
+    if level == 1:
+        quantity = random.randint(1, 3)
+    if level == 2:
+        quantity = random.randint(2, 6)
+    if level == 3:
+        quantity = random.randint(4, 7)
+    if level == 4:
+        quantity = random.randint(5, 10)
+    # content coming soon
+    give(inventory, "Wood", quantity)
+    await ctx.send(f"You got {quantity} wood!")
+ 
 
 def signal_handler(signal, frame):
     print("Saving dictionary...")
@@ -270,7 +292,7 @@ async def count(ctx):
 # RPG stuff
 
 
-@bot.command()
+@bot.command(aliases = ["start"])
 async def init(ctx):
     if generate_inv(ctx.message.author):
         await ctx.send("Initialisation complete! If you're ever stuck or lost, do `~use Guide`. ")
@@ -278,7 +300,7 @@ async def init(ctx):
     await ctx.send("You already have an inventory!")
 
 
-@bot.command()
+@bot.command(aliases = ["ls", "i"])
 async def inv(ctx, member: discord.User = None):
     # User inventory
     if member:
@@ -312,15 +334,14 @@ async def rm(ctx, item, quantity="1"):
     await ctx.send(f"{quantity} {item}(s) have been removed from your inventory")
 
 
-@bot.command()
+@bot.command(aliases = ["u"])
 async def use(ctx, item):
     id = ctx.message.author.id
     inventory = inventories[id]
     if not inventory.get(item):
         await ctx.send(f"You don't have {item}!")
         return
-    if item == "Axe":
-        await ctx.send("this is broken for now")
+
     elif item == "Pickaxe":
         await mine(ctx, inventory, 1)
         remove(inventory, "Pickaxe")
@@ -333,6 +354,20 @@ async def use(ctx, item):
     elif item == "Gold Pickaxe":
         await mine(ctx, inventory, 4)
         remove(inventory, "Gold Pickaxe")
+
+    elif item == "Axe":
+        await chop(ctx, inventory, 1)
+        remove(inventory, "Axe")
+    elif item == "Iron Axe":
+        await chop(ctx, inventory, 2)
+        remove(inventory, "Iron Axe")
+    elif item == "Copper Axe":
+        await chop(ctx, inventory, 3)
+        remove(inventory, "Copper Axe")
+    elif item == "Gold Axe":
+        await chop(ctx, inventory, 4)
+        remove(inventory, "Gold Axe")
+
     elif item == "Guide":
         await guide(ctx)
     elif item == "Crafting Table":
@@ -343,7 +378,7 @@ async def use(ctx, item):
         await ctx.send(f"You can't use {item}")
 
 
-@bot.command()
+@bot.command(aliases = ["make", "c"])
 async def craft(ctx, item):
     id = ctx.message.author.id
     inventory = inventories[id]
@@ -406,6 +441,26 @@ async def craft(ctx, item):
 
         await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
 
+    elif item == "Copper Bar":
+        input = {"Copper Ore": 4, "Coal": 3}
+        output = {"Copper Bar": 1}
+        catalysts = ["Furnace"]
+
+        success_msg = "Forged a Copper Bar!"
+        fail_msg = "You lack the required resources! You need 4 Copper Ore, 3 Coal and a Furnace."
+
+        await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
+
+    elif item == "Gold Bar":
+        input = {"Gold Ore": 4, "Coal": 3}
+        output = {"Gold Bar": 1}
+        catalysts = ["Furnace"]
+
+        success_msg = "Forged a Gold Bar!"
+        fail_msg = "You lack the required resources! You need 4 Gold Ore, 3 Coal and a Furnace."
+
+        await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
+
     elif item == "Iron Pickaxe":
         input = {"Iron Bar": 3, "Wood": 10}
         output = {"Iron Pickaxe": 25}
@@ -425,11 +480,56 @@ async def craft(ctx, item):
         fail_msg = "You lack the required resources! You need 10 Wood, 3 Iron Bars and an Anvil."
 
         await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
+    
+    elif item == "Copper Pickaxe":
+        input = {"Copper Bar": 3, "Wood": 10}
+        output = {"Copper Pickaxe": 25}
+        catalysts = ["Anvil"]
+
+        success_msg = "Assembled 25 Copper Pickaxes!"
+        fail_msg = "You lack the required resources! You need 10 Wood, 3 Copper Bars and an Anvil."
+
+        await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
+    
+    elif item == "Copper Axe":
+        input = {"Copper Bar": 3, "Wood": 10}
+        output = {"Copper Axe": 25}
+        catalysts = ["Anvil"]
+
+        success_msg = "Assembled Copper Axes!"
+        fail_msg = "You lack the required resources! You need 10 Wood, 3 Copper Bars and an Anvil."
+
+        await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
+
+    elif item == "Gold Pickaxe":
+        input = {"Gold Bar": 3, "Wood": 10}
+        output = {"Gold Pickaxe": 25}
+        catalysts = ["Anvil"]
+
+        success_msg = "Assembled 25 Gold Pickaxes!"
+        fail_msg = "You lack the required resources! You need 10 Wood, 3 Gold Bars and an Anvil."
+
+        await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
+    
+    elif item == "Gold Axe":
+        input = {"Gold Bar": 3, "Wood": 10}
+        output = {"Gold Axe": 25}
+        catalysts = ["Anvil"]
+
+        success_msg = "Assembled 25 Gold Axes!"
+        fail_msg = "You lack the required resources! You need 10 Wood, 3 Gold Bars and an Anvil."
+
+        await craft_item(ctx, inventory, fail_msg, success_msg, input, output, catalysts)
+
+
     else:
         await ctx.send(f"{item} can't be crafted.")
+    
+
+        
 
 
-@bot.command()
+@bot.command(aliases = ["s"])
 async def shop(ctx, item):
     id = ctx.message.author.id
     inventory = inventories[id]
