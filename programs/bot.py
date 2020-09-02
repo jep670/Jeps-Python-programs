@@ -258,7 +258,7 @@ async def word(ctx, length):
     if length.isdigit():
         length = int(length)
         if length > 2000:
-            await ctx.send('The number you have inputted is'
+            await ctx.send('The number you have inputted is '
                            'above the 2000 character limit.')
             return
         outputword = jrlib.generate_word(length)
