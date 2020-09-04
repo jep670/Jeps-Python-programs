@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import asyncio
 import os
 import pickle
 import random
@@ -19,9 +18,9 @@ bot.remove_command('help')
 
 # Variables
 
-eggcount = 0
-wordcount = 0
-diceCount = 0
+egg_count = 0
+word_count = 0
+dice_count = 0
 
 if os.path.exists("inventories.pkl"):
     file = open("inventories.pkl", "rb")
@@ -201,8 +200,7 @@ async def generate_inv(member):
         await give(inventories[member.id], "Stone Axe", 50)
         await give(inventories[member.id], "Stone Pickaxe", 50)
         return True
-    else:
-        return False
+    return False
 
 
 @bot.command()
@@ -253,7 +251,7 @@ async def captcha(ctx):
 
 @bot.command()
 async def word(ctx, length):
-    global wordcount
+    global word_count
 
     if length.isdigit():
         length = int(length)
@@ -262,7 +260,7 @@ async def word(ctx, length):
                            'above the 2000 character limit.')
             return
         outputword = jrlib.generate_word(length)
-        wordcount = wordcount + 1
+        word_count = word_count + 1
         await ctx.send(outputword)
     elif length.lower() == "a number":
         await ctx.send('The string of text "a number" isn\'t a number ')
@@ -275,14 +273,14 @@ async def word(ctx, length):
 @bot.command()
 async def egg(ctx):
     # EGG
-    global eggcount
-    eggcount = eggcount + 1
+    global egg_count
+    egg_count = egg_count + 1
     await ctx.send(":egg:")
 
 
 @bot.command()
 async def dice(ctx, sides):
-    global diceCount
+    global dice_count
 
     if sides.isdigit():
         sides = int(sides)
@@ -291,7 +289,7 @@ async def dice(ctx, sides):
                 "Cannot roll a dice with sides that are less then one.")
             return
         output = random.randint(1, sides)
-        diceCount = diceCount + 1
+        dice_count = dice_count + 1
         await ctx.send(output)
     elif sides.lower() == "a number":
         await ctx.send('The string of text "a number" isn\'t a number ')
@@ -306,13 +304,13 @@ async def dice(ctx, sides):
 @bot.command()
 async def count(ctx):
     # Server's inventory
-    global diceCount
-    global eggcount
-    global wordcount
+    global dice_count
+    global egg_count
+    global word_count
 
-    cnt_menu = f"{eggcount} eggs"\
-               f"\n {diceCount} dice thrown"\
-               f"\n {wordcount} words generated"
+    cnt_menu = f"{egg_count} eggs"\
+               f"\n {dice_count} dice thrown"\
+               f"\n {word_count} words generated"
     embed = discord.Embed(title="Command Count", description=cnt_menu)
     await ctx.send(embed=embed)
 
@@ -371,7 +369,7 @@ async def use(ctx, item):
     if not inventory.get(item):
         await ctx.send(f"You don't have {item}!")
         return
-    elif "Pickaxe" in item:
+    if "Pickaxe" in item:
         level = await get_item_level(item)
         await mine(ctx, inventory, level)
         await remove(inventory, item)
@@ -399,157 +397,18 @@ async def craft(ctx, item):
     id = ctx.message.author.id
     inventory = inventories[id]
 
-    if item == "Crafting Table":
-        input = {"Wood": 10}
-        output = {"Crafting Table": 1}
+    recipe = await get_crafting_recipe(item)
 
-        success_msg = "Crafted a crafting table!"
-        fail_msg = await get_cfail("10 Wood")
+    if recipe:
+        fail_msg = await get_cfail(recipe["resources"])
 
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output)
+        if recipe.get("catalyst"):
+            catalysts = recipe["catalyst"]
+        else:
+            catalysts = []
 
-    elif item == "Stone Axe":
-        input = {"Wood": 10, "Stone": 10}
-        output = {"Stone Axe": 25}
-        catalysts = ["Crafting Table"]
-
-        success_msg = "Made 25 Stone Axes!"
-        fail_msg = await get_cfail("10 Wood, 10 Stone and a Crafting Table")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Stone Pickaxe":
-        input = {"Wood": 10, "Stone": 10}
-        output = {"Stone Pickaxe": 25}
-        catalysts = ["Crafting Table"]
-
-        success_msg = "Made 25 Pickaxes!"
-        fail_msg = await get_cfail("10 Wood, 10 Stone and a Crafting Table")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Furnace":
-        input = {"Stone": 20, "Coal": 3}
-        output = {"Furnace": 1}
-        catalysts = ["Crafting Table"]
-
-        success_msg = "Made a Furnace!"
-        fail_msg = await get_cfail("20 Stone, 3 Coal and a Crafting Table")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Anvil":
-        input = {"Iron Bar": 2, "Wood": 10}
-        output = {"Anvil": 1}
-        catalysts = ["Crafting Table"]
-
-        success_msg = "Made an Anvil!"
-        fail_msg = await get_cfail("10 Wood, 2 Iron Bars and a Crafting Table")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Iron Bar":
-        input = {"Iron Ore": 4, "Coal": 3}
-        output = {"Iron Bar": 1}
-        catalysts = ["Furnace"]
-
-        success_msg = "Forged an Iron Bar!"
-        fail_msg = await get_cfail("4 Iron Ore, 3 Coal and a Furnace")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Copper Bar":
-        input = {"Copper Ore": 4, "Coal": 3}
-        output = {"Copper Bar": 1}
-        catalysts = ["Furnace"]
-
-        success_msg = "Forged a Copper Bar!"
-        fail_msg = await get_cfail("4 Copper Ore, 3 Coal and a Furnace")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Gold Bar":
-        input = {"Gold Ore": 4, "Coal": 3}
-        output = {"Gold Bar": 1}
-        catalysts = ["Furnace"]
-
-        success_msg = "Forged a Gold Bar!"
-        fail_msg = await get_cfail("4 Gold Ore, 3 Coal and a Furnace")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Iron Pickaxe":
-        input = {"Iron Bar": 3, "Wood": 10}
-        output = {"Iron Pickaxe": 25}
-        catalysts = ["Anvil"]
-
-        success_msg = "Assembled 25 Iron Pickaxes!"
-        fail_msg = await get_cfail("10 Wood, 3 Iron Bars and an Anvil")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Iron Axe":
-        input = {"Iron Bar": 3, "Wood": 10}
-        output = {"Iron Axe": 25}
-        catalysts = ["Anvil"]
-
-        success_msg = "Assembled 25 Iron Axes!"
-        fail_msg = await get_cfail("10 Wood, 3 Iron Bars and an Anvil")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Copper Pickaxe":
-        input = {"Copper Bar": 3, "Wood": 10}
-        output = {"Copper Pickaxe": 25}
-        catalysts = ["Anvil"]
-
-        success_msg = "Assembled 25 Copper Pickaxes!"
-        fail_msg = await get_cfail("10 Wood, 3 Copper Bars and an Anvil")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Copper Axe":
-        input = {"Copper Bar": 3, "Wood": 10}
-        output = {"Copper Axe": 25}
-        catalysts = ["Anvil"]
-
-        success_msg = "Assembled Copper Axes!"
-        fail_msg = await get_cfail("10 Wood, 3 Copper Bars and an Anvil")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Gold Pickaxe":
-        input = {"Gold Bar": 3, "Wood": 10}
-        output = {"Gold Pickaxe": 25}
-        catalysts = ["Anvil"]
-
-        success_msg = "Assembled 25 Gold Pickaxes!"
-        fail_msg = await get_cfail("10 Wood, 3 Gold Bars and an Anvil")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
-
-    elif item == "Gold Axe":
-        input = {"Gold Bar": 3, "Wood": 10}
-        output = {"Gold Axe": 25}
-        catalysts = ["Anvil"]
-
-        success_msg = "Assembled 25 Gold Axes!"
-        fail_msg = await get_cfail("10 Wood, 3 Gold Bars and an Anvil")
-
-        await craft_item(ctx, inventory, fail_msg, success_msg, input, output,
-                         catalysts)
+        await craft_item(ctx, inventory, fail_msg, recipe["success_msg"],
+                         recipe["input"], recipe["output"], catalysts)
 
     else:
         await ctx.send(f"{item} can't be crafted.")
@@ -563,7 +422,7 @@ async def shop(ctx, item):
         input = {"Gold": 100}
         output = {"Stone Axe": 25}
 
-        success_msg = "Craf- I mean Bought an Stone Axe!"
+        success_msg = "Craf- I mean Bought a Stone Axe!"
         fail_msg = "You lack the required funds! You need 100 Gold."
 
         await craft_item(ctx, inventory, fail_msg, success_msg, input, output)
@@ -677,6 +536,180 @@ async def trade(ctx, member: discord.User, give_items, receive_items):
     else:
         await ctx.send("Good")
 """
+
+
+async def get_crafting_recipe(item):
+    crafting_recipes = {
+        "Crafting Table": {
+            "input": {
+                "Wood": 10
+            },
+            "output": {
+                "Crafting Table": 1
+            },
+            "success_msg": "Crafted a crafting table!",
+            "resources": "10 Wood"
+        },
+        "Stone Axe": {
+            "input": {
+                "Wood": 10,
+                "Stone": 10
+            },
+            "output": {
+                "Stone Pickaxe": 1
+            },
+            "catalysts": ["Crafting Table"],
+            "success_msg": "Made 25 Stone Axes!",
+            "resources": "10 Wood, 10 Stone, and a Crafting Table"
+        },
+        "Stone Pickaxe": {
+            "input": {
+                "Wood": 10,
+                "Stone": 10
+            },
+            "output": {
+                "Stone Pickaxe": 25
+            },
+            "catalysts": ["Crafting Table"],
+            "success_msg": "Made 25 Stone Pickaxes!",
+            "resources": "10 Wood, 10 Stone and a Crafting Table"
+        },
+        "Furnace": {
+            "input": {
+                "Stone": 20,
+                "Coal": 3
+            },
+            "output": {
+                "Furnace": 1
+            },
+            "catalysts": ["Crafting Table"],
+            "success_msg": "Made a Furnace!",
+            "resources": "20 Stone, 3 Coal and a Crafting Table"
+        },
+        "Anvil": {
+            "input": {
+                "Iron Bar": 2,
+                "Wood": 10
+            },
+            "output": {
+                "Anvil": 1
+            },
+            "catalysts": ["Crafting Table"],
+            "success_msg": "Made an Anvil!",
+            "resources": "10 Wood, 2 Iron Bars and a Crafting Table"
+        },
+        "Iron Bar": {
+            "input": {
+                "Iron Ore": 4,
+                "Coal": 3
+            },
+            "output": {
+                "Iron Bar": 1
+            },
+            "catalysts": ["Furnace"],
+            "success_msg": "Forged an Iron Bar!",
+            "resources": "4 Iron Ore, 3 Coal and a Furnace"
+        },
+        "Copper Bar": {
+            "input": {
+                "Copper Ore": 4,
+                "Coal": 3
+            },
+            "output": {
+                "Copper Bar": 1
+            },
+            "catalysts": ["Furnace"],
+            "success_msg": "Forged a Copper Bar!",
+            "resources": "4 Copper Ore, 3 Coal and a Furnace"
+        },
+        "Gold Bar": {
+            "input": {
+                "Gold Ore": 4,
+                "Coal": 3
+            },
+            "output": {
+                "Gold Bar": 1
+            },
+            "catalysts": ["Furnace"],
+            "success_msg": "Forged a Gold Bar!",
+            "resources": "4 Gold ORe, 3 Coal and a Furnace"
+        },
+        "Iron Pickaxe": {
+            "input": {
+                "Iron Bar": 3,
+                "Wood": 10
+            },
+            "output": {
+                "Iron Pickaxe": 25
+            },
+            "catalysts": ["Anvil"],
+            "success_msg": "Assembled 25 Iron Pickaxes!",
+            "resources": "10 Wood, 3 Iron Bars and an Anvil"
+        },
+        "Iron Axe": {
+            "input": {
+                "Iron Bar": 3,
+                "Wood": 10
+            },
+            "output": {
+                "Iron Axe": 25
+            },
+            "catalysts": ["Anvil"],
+            "success_msg": "Assembled 25 Iron Axes!",
+            "resources": "10 Wood, 3 Iron Bars and an Anvil"
+        },
+        "Copper Pickaxe": {
+            "input": {
+                "Copper Bar": 3,
+                "Wood": 10
+            },
+            "output": {
+                "Copper Pickaxe": 25
+            },
+            "catalysts": ["Anvil"],
+            "success_msg": "Assembled 25 Copper Pickaxes!",
+            "resources": "10 Wood, 3 Copper Bars and an Anvil"
+        },
+        "Copper Axe": {
+            "input": {
+                "Copper Bar": 3,
+                "Wood": 10
+            },
+            "output": {
+                "Copper Axe": 25
+            },
+            "catalysts": ["Anvil"],
+            "success_msg": "Assembled Copper Axes!",
+            "resources": "10 Wood, 3 Copper Bars and and Anvil"
+        },
+        "Gold Pickaxe": {
+            "input": {
+                "Gold Bar": 3,
+                "Wood": 10
+            },
+            "output": {
+                "Gold Pickaxe": 25
+            },
+            "catalysts": ["Anvil"],
+            "success_msg": "Assembled 25 Gold Pickaxes!",
+            "resources": "10 Wood, 3 Gold Bars and an Anvil"
+        },
+        "Gold Axe": {
+            "input": {
+                "Gold Bar": 3,
+                "Wood": 10
+            },
+            "output": {
+                "Gold Axe": 25
+            },
+            "catalysts": ["Anvil"],
+            "success_msg": "Assembled 25 Gold Axes!",
+            "resources": "10 Wood, 3 Gold Bars and an Anvil"
+        }
+    }
+
+    return crafting_recipes.get(item)
+
 
 file = open("token.txt")
 token = file.read()
