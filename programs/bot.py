@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+"""Runs a Discord bot"""
 
+import atexit
 import os
 import pickle
 import random
 import re
-import signal
-import sys
 
 import discord
 import numpy as np
@@ -13,15 +13,18 @@ from discord.ext import commands
 
 import jrlib
 
+# Init
+print("Initialising...")
+
 bot = commands.Bot(command_prefix='~', case_insensitive=True)
 bot.remove_command('help')
 
-# Variables
-
+# Global Variables
 egg_count = 0
 word_count = 0
 dice_count = 0
 
+# Load inventory from file
 if os.path.exists("inventories.pkl"):
     file = open("inventories.pkl", "rb")
     inventories = pickle.load(file)
@@ -29,20 +32,100 @@ if os.path.exists("inventories.pkl"):
 else:
     inventories = {}
 
-# Functions
+
+# Save to file on exit
+def exit_handler():
+    print("---")
+    print("Saving inventory, please wait...")
+    file = open("inventories.pkl", "wb")
+    pickle.dump(inventories, file)
+    file.close()
+    print("Save complete, exiting...")
 
 
+atexit.register(exit_handler)
+
+
+# Methods
 async def get_cfail(items_str):
+    """Return the full craft fail message from the input items string"""
     return f"You lack the required resources! You need {items_str}."
 
 
 async def get_item_level(item):
+    """Return the item level (number) from the item name"""
     level_names = [None, "Stone", "Iron", "Copper", "Gold", "Diamond"]
     level_name = item.split(" ")[0]
     return level_names.index(level_name)
 
 
+async def parse_items(items):
+    """Return an item dictionary from a string of a list of items"""
+    items = items.split(",")
+    output = {}
+
+    # Process item
+    for item in items:
+        # Remove leading and trailling spaces
+        item = item.strip()
+        # Seperate quantity and item
+        item = item.split(" ", 1)
+        # Remove letters from quantity
+        # In case they did something like "x5" instead of "5"
+        item[0] = re.sub("[^0-9]", "", item[0])
+        # Convert quantity to an integer
+        item[0] = int(item[0])
+        # Make dictionary entry
+        output[item[1]] = item[0]
+    return output
+
+
+async def mine(ctx, inventory, level):
+    """Calculate and give mining results"""
+    if level == 1:
+        ores = ["Stone", "Coal", "Iron Ore"]
+        chance = [0.50, 0.45, 0.05]
+    elif level == 2:
+        ores = ["Stone", "Coal", "Iron Ore", "Copper Ore"]
+        chance = [0.25, 0.25, 0.45, 0.05]
+    elif level == 3:
+        ores = ["Coal", "Iron Ore", "Copper Ore", "Gold Ore"]
+        chance = [0.4, 0.25, 0.25, 0.05]
+    elif level == 4:
+        ores = ["Coal", "Copper Ore", "Gold Ore", "Diamond Ore"]
+        chance = [0.4, 0.25, 0.25, 0.1]
+    quantity = np.random.choice([2, 3], 1, [0.9, 0.1])[0]
+    output = np.random.choice(ores, 1, chance)[0]
+    await give(inventory, output, quantity)
+    await give(inventory, "Stone")
+    await ctx.send(f"You got {quantity} {output}s!")
+
+
+async def chop(ctx, inventory, level):
+    """Calculate and give wood"""
+    if level == 1:
+        quantity = random.randint(1, 3)
+    if level == 2:
+        quantity = random.randint(2, 6)
+    if level == 3:
+        quantity = random.randint(4, 7)
+    if level == 4:
+        quantity = random.randint(5, 10)
+    # content coming soon
+    await give(inventory, "Wood", quantity)
+
+    await ctx.send(f"You got {quantity} wood!")
+
+
+async def give(inventory, item, quantity=1):
+    """Give item to inventory"""
+    if item not in inventory:
+        inventory[item] = 0
+    inventory[item] = inventory[item] + quantity
+
+
 async def guide(ctx):
+    """Say the guide in chat"""
     guide_menu = '*For command help, use the `~help` command*'\
         "\n Chapters"\
         "\n 1. *Crafting*"\
@@ -87,64 +170,8 @@ async def guide(ctx):
     await ctx.send(embed=materials_embed)
 
 
-async def mine(ctx, inventory, level):
-    if level == 1:
-        ores = ["Stone", "Coal", "Iron Ore"]
-        chance = [0.50, 0.45, 0.05]
-    elif level == 2:
-        ores = ["Stone", "Coal", "Iron Ore", "Copper Ore"]
-        chance = [0.25, 0.25, 0.45, 0.05]
-    elif level == 3:
-        ores = ["Coal", "Iron Ore", "Copper Ore", "Gold Ore"]
-        chance = [0.4, 0.25, 0.25, 0.05]
-    elif level == 4:
-        ores = ["Coal", "Copper Ore", "Gold Ore", "Diamond Ore"]
-        chance = [0.4, 0.25, 0.25, 0.1]
-    quantity = np.random.choice([2, 3], 1, [0.9, 0.1])[0]
-    output = np.random.choice(ores, 1, chance)[0]
-    await give(inventory, output, quantity)
-    await give(inventory, "Stone")
-    await ctx.send(f"You got {quantity} {output}s!")
-
-
-async def chop(ctx, inventory, level):
-    if level == 1:
-        quantity = random.randint(1, 3)
-    if level == 2:
-        quantity = random.randint(2, 6)
-    if level == 3:
-        quantity = random.randint(4, 7)
-    if level == 4:
-        quantity = random.randint(5, 10)
-    # content coming soon
-    await give(inventory, "Wood", quantity)
-    await ctx.send(f"You got {quantity} wood!")
-
-
-def signal_handler(signal, frame):
-    print("Saving dictionary...")
-    file = open("inventories.pkl", "wb")
-    pickle.dump(inventories, file)
-    file.close()
-    sys.exit(0)
-
-
-signal.signal(signal.SIGINT, signal_handler)
-
-
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
-    print("Startup complete")
-
-
-async def give(inventory, item, quantity=1):
-    if item not in inventory:
-        inventory[item] = 0
-    inventory[item] = inventory[item] + quantity
-
-
 async def remove(inventory, item, quantity=1):
+    """Remove item from inventory"""
     inventory[item] = inventory[item] - quantity
     if inventory[item] < 1:
         try:
@@ -184,6 +211,7 @@ async def craft_item(ctx,
 
 # Stands for "Dictionary 2 Inventory string"
 async def D2IS(inventory):
+    """Convert inventory to inventory string"""
     inv_str = ""
     for item in inventory:
         inv_str = inv_str + f"**x{inventory[item]}** {item} \n"
@@ -191,33 +219,47 @@ async def D2IS(inventory):
 
 
 async def generate_inv(member):
+    """Generate inventory for member"""
     if member.id not in inventories:
-        inventories[member.id] = {}
-        await give(inventories[member.id], "Gold", 500)
-        await give(inventories[member.id], "Guide")
-        await give(inventories[member.id], "Starter Sword")
-        await give(inventories[member.id], "Starter Shield")
-        await give(inventories[member.id], "Stone Axe", 50)
-        await give(inventories[member.id], "Stone Pickaxe", 50)
+        inventories[member.id] = {
+            "Gold": 500,
+            "Guide": 1,
+            "Starter Sword": 1,
+            "Starter Shield": 1,
+            "Stone Axe": 50,
+            "Stone Pickaxe": 50
+        }
         return True
     return False
 
 
+# Bot Events
+
+
+@bot.event
+async def on_ready():
+    print(f"Logged in as {bot.user}")
+    print("Startup complete, use ctrl-c to exit")
+
+
+# Bot Commands
+
+
 @bot.command()
 async def ping(ctx):
-    # This tests latency
+    """Tests latency"""
     await ctx.send(f"Pong! (latency {bot.latency})")
 
 
 @bot.command()
 async def pong(ctx):
-    # This confuses the bot
+    """Confuses the bot"""
     await ctx.send("Po- wait what?")
 
 
 @bot.command()
 async def help(ctx):
-    # Basic help command
+    """Basic help menu"""
     help_menu = "  `ping` - Test bot latency"\
                 "\n  `help` - Opens the help menu"\
                 "\n  `captcha` - Test if you're talking with a bot"\
@@ -245,12 +287,13 @@ async def help(ctx):
 
 @bot.command()
 async def captcha(ctx):
-    # Makes sure you're talking with a human!
+    """Makes sure you are talking to a human"""
     await ctx.send(" ``beep boop i am not a bot`` ")
 
 
 @bot.command()
 async def word(ctx, length):
+    """Generate random word"""
     global word_count
 
     if length.isdigit():
@@ -272,7 +315,7 @@ async def word(ctx, length):
 
 @bot.command()
 async def egg(ctx):
-    # EGG
+    """EGG"""
     global egg_count
     egg_count = egg_count + 1
     await ctx.send(":egg:")
@@ -280,6 +323,7 @@ async def egg(ctx):
 
 @bot.command()
 async def dice(ctx, sides):
+    """Rolls a dice"""
     global dice_count
 
     if sides.isdigit():
@@ -303,7 +347,7 @@ async def dice(ctx, sides):
 
 @bot.command()
 async def count(ctx):
-    # Server's inventory
+    """Get server's inventory"""
     global dice_count
     global egg_count
     global word_count
@@ -320,6 +364,7 @@ async def count(ctx):
 
 @bot.command(aliases=["start"])
 async def init(ctx):
+    """Generate inventory"""
     if await generate_inv(ctx.message.author):
         await ctx.send("Initialisation complete! "
                        "If you're ever stuck or lost, do `~use Guide`. ")
@@ -329,7 +374,7 @@ async def init(ctx):
 
 @bot.command(aliases=["ls", "i"])
 async def inv(ctx, member: discord.User = None):
-    # User inventory
+    """Get inventory of user"""
     if member:
         id = member.id
     else:
@@ -343,7 +388,7 @@ async def inv(ctx, member: discord.User = None):
 
 @bot.command()
 async def rm(ctx, item, quantity="1"):
-    # Removes an item
+    """Removes an item"""
     if quantity.isdigit():
         quantity = int(quantity)
         if quantity < 0:
@@ -364,9 +409,10 @@ async def rm(ctx, item, quantity="1"):
 
 @bot.command(aliases=["u"])
 async def use(ctx, item):
+    """Use an item"""
     id = ctx.message.author.id
     inventory = inventories[id]
-    if not inventory.get(item):
+    if item not in inventory:
         await ctx.send(f"You don't have {item}!")
         return
     if "Pickaxe" in item:
@@ -394,6 +440,7 @@ async def use(ctx, item):
 
 @bot.command(aliases=["make", "c"])
 async def craft(ctx, item):
+    """Craft an item"""
     id = ctx.message.author.id
     inventory = inventories[id]
 
@@ -402,10 +449,9 @@ async def craft(ctx, item):
     if recipe:
         fail_msg = await get_cfail(recipe["resources"])
 
-        if recipe.get("catalyst"):
-            catalysts = recipe["catalyst"]
-        else:
-            catalysts = []
+        # Create variable which defaults to empty list if none
+        # since catalysts is optional
+        catalysts = recipe.get("catalysts", [])
 
         await craft_item(ctx, inventory, fail_msg, recipe["success_msg"],
                          recipe["input"], recipe["output"], catalysts)
@@ -416,6 +462,7 @@ async def craft(ctx, item):
 
 @bot.command(aliases=["s"])
 async def shop(ctx, item):
+    """Buy an item"""
     id = ctx.message.author.id
     inventory = inventories[id]
     if item == "Stone Axe":
@@ -450,95 +497,76 @@ async def shop(ctx, item):
         await ctx.send(f"{item} isn't for sale.")
 
 
-async def parse_items(items):
-    items = items.split(",")
-    output = {}
-
-    # Process item
-    for item in items:
-        # Remove leading and trailling spaces
-        item = item.strip()
-        # Seperate quantity and item
-        item = item.split(" ", 1)
-        # Remove letters from quantity
-        # In case they did something like "x5" instead of "5"
-        item[0] = re.sub("[^0-9]", "", item[0])
-        # Convert quantity to an integer
-        item[0] = int(item[0])
-        # Make dictionary entry
-        output[item[1]] = item[0]
-    return output
-
-
-"""
-Incomplete trading feature (requires asyncio)
-
-@bot.command()
-async def trade(ctx, member: discord.User, give_items, receive_items):
-    give_items_dict = await parse_items(give_items)
-    receive_items_dict = await parse_items(receive_items)
-
-    give_items_str = await D2IS(give_items_dict)
-    receive_items_str = await D2IS(receive_items_dict)
-
-    give_embed = discord.Embed(
-        title=f"What {ctx.author.name} will give to {member.name}",
-        description=give_items_str,
-        color=0xff254d)
-    receive_embed = discord.Embed(
-        title=f"What {member.name} will give {ctx.author.name} in return",
-        description=receive_items_str,
-        color=0x59b2ff)
-
-    await ctx.send(f"{ctx.author.mention} and {member.mention}:",
-                   embed=give_embed)
-    await ctx.send(embed=receive_embed)
-
-    confirm_msg_tmp = await ctx.send(
-        f"I need both {ctx.author.mention} and {member.mention} "
-        "to confirm this trade (FINAL STEP).")
-
-    await confirm_msg_tmp.add_reaction("👍")
-    await confirm_msg_tmp.add_reaction("👎")
-
-    await asyncio.sleep(1)
-
-    confirm_msg = discord.utils.get(bot.cached_messages, id=confirm_msg_tmp.id)
-
-    def check(reaction, user):
-        print("Checking")
-        print(confirm_msg.reactions)
-        if len(confirm_msg.reactions) < 1:
-            print("Reactions not loaded in yet")
-            return False
-        accept_react = confirm_msg.reactions[0]
-        reject_react = confirm_msg.reactions[1]
-
-        accept_react_users = accept_react.users()
-        reject_react_users = reject_react.users()
-        react_users = []
-
-        for user in accept_react_users:
-            react_users.append(user)
-
-        for user in reject_react_users:
-            react_users.append(user)
-
-        react_users = accept_react_users + reject_react_users
-        return member in react_users and ctx.author in react_users
-
-    try:
-        await bot.wait_for('reaction_add', timeout=60.0, check=check)
-    except asyncio.TimeoutError:
-        await confirm_msg.edit(content=":no_entry:  Trade timed out.")
-        await confirm_msg.remove_reaction()
-        return
-    else:
-        await ctx.send("Good")
-"""
+# Incomplete trading feature (requires asyncio)
+#
+# @bot.command()
+# async def trade(ctx, member: discord.User, give_items, receive_items):
+#    give_items_dict = await parse_items(give_items)
+#    receive_items_dict = await parse_items(receive_items)
+#
+#    give_items_str = await D2IS(give_items_dict)
+#    receive_items_str = await D2IS(receive_items_dict)
+#
+#    give_embed = discord.Embed(
+#        title=f"What {ctx.author.name} will give to {member.name}",
+#        description=give_items_str,
+#        color=0xff254d)
+#    receive_embed = discord.Embed(
+#        title=f"What {member.name} will give {ctx.author.name} in return",
+#        description=receive_items_str,
+#        color=0x59b2ff)
+#
+#    await ctx.send(f"{ctx.author.mention} and {member.mention}:",
+#                   embed=give_embed)
+#    await ctx.send(embed=receive_embed)
+#
+#    confirm_msg_tmp = await ctx.send(
+#        f"I need both {ctx.author.mention} and {member.mention} "
+#        "to confirm this trade (FINAL STEP).")
+#
+#    await confirm_msg_tmp.add_reaction("👍")
+#    await confirm_msg_tmp.add_reaction("👎")
+#
+#    await asyncio.sleep(1)
+#
+#    confirm_msg = discord.utils.get(bot.cached_messages,
+#                                    id=confirm_msg_tmp.id)
+#
+#    def check(reaction, user):
+#        print("Checking")
+#        print(confirm_msg.reactions)
+#        if len(confirm_msg.reactions) < 1:
+#            print("Reactions not loaded in yet")
+#            return False
+#        accept_react = confirm_msg.reactions[0]
+#        reject_react = confirm_msg.reactions[1]
+#
+#        accept_react_users = accept_react.users()
+#        reject_react_users = reject_react.users()
+#        react_users = []
+#
+#        for user in accept_react_users:
+#            react_users.append(user)
+#
+#        for user in reject_react_users:
+#            react_users.append(user)
+#
+#        react_users = accept_react_users + reject_react_users
+#        return member in react_users and ctx.author in react_users
+#
+#    try:
+#        await bot.wait_for('reaction_add', timeout=60.0, check=check)
+#    except asyncio.TimeoutError:
+#        await confirm_msg.edit(content=":no_entry:  Trade timed out.")
+#        await confirm_msg.remove_reaction()
+#        return
+#    else:
+#        await ctx.send("Good")
 
 
+# Craft lookup
 async def get_crafting_recipe(item):
+    """Get crafting recipe from item name"""
     crafting_recipes = {
         "Crafting Table": {
             "input": {
@@ -711,6 +739,9 @@ async def get_crafting_recipe(item):
     return crafting_recipes.get(item)
 
 
+# Start bot
 file = open("token.txt")
 token = file.read()
+file.close()
+print("Starting bot...")
 bot.run(token)
